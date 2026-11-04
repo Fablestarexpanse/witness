@@ -71,3 +71,7 @@ Run the same multi-session coding task with (a) no memory, (b) a plain notes fil
 (c) witness. Seed claims, change the code between sessions so some go stale, and
 score: tasks completed, stale claims acted on, tokens spent. The stale-claims-acted-on
 number is where witness should win, and where the notes file should lose.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
