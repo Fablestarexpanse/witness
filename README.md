@@ -6,6 +6,27 @@ Most memory tools store a sentence and trust it forever. witness stores the sent
 plus small checks (witnesses) against the repo, and re-runs them. A remembered claim is
 shown as true only if its proof still holds.
 
+## What it looks like
+
+`witness report` writes one self-contained HTML file. Claims are sorted worst first, and each one shows the proof it was checked against. The colour bar and the trend line show at a glance how much of your agent's memory still holds.
+
+<p align="center">
+  <img src="docs/images/dashboard-desktop-light.png" width="560" alt="Witness dashboard on desktop in light mode: 1 of 7 memories still hold, a status bar, a trend line, and claim cards marked broken, drifted, no proof and holds">
+  &nbsp;
+  <img src="docs/images/dashboard-phone-dark.png" width="230" alt="The same dashboard on a phone in dark mode">
+</p>
+
+Those are from the demo repo (`examples/demo.sh`), where the code was changed under the remembered claims. In a terminal, `witness check` prints the same information:
+
+```
+BROKEN      w-99ee74  DB pool is capped at 10 connections; more starves the worker
+            grep:src/db.py  pattern no longer found
+            git:src/db.py  behind 1 commit
+DRIFTED     w-a1fbdc  Auth tokens expire after one hour
+            git:src/auth.py  behind 1 commit
+FRESH       w-e12ce5  Auth tests must pass before touching token code
+```
+
 One file, Python 3.8+, standard library only, works on Windows, macOS and Linux.
 
 ## Use
