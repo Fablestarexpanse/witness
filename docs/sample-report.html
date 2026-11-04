@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Witness</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one calm column. Verdict and bar first, trend beside it, then the claims worst-first. */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --ink: #1b2330; --muted: #667085; --line: #e3e6ec;
+  --fresh: #1f9d63; --drifted: #d98a00; --broken: #d6453d; --unchecked: #3b82c4; --unwitnessed: #8a93a3;
+  --fresh-bg: #e6f5ee; --drifted-bg: #fdf1d9; --broken-bg: #fbe7e5; --unchecked-bg: #e4eef8; --unwitnessed-bg: #eceef2;
+  --sans: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161d; --surface: #1a2029; --ink: #e8ecf2; --muted: #98a2b3; --line: #29313d;
+  --fresh: #3ec58a; --drifted: #f0b03a; --broken: #f06b63; --unchecked: #6aa8e8; --unwitnessed: #7c8697;
+  --fresh-bg: #16342a; --drifted-bg: #3a2f14; --broken-bg: #3d1f1d; --unchecked-bg: #172a3d; --unwitnessed-bg: #252c37;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --ink: #e8ecf2; --muted: #98a2b3; --line: #29313d;
+  --fresh: #3ec58a; --drifted: #f0b03a; --broken: #f06b63; --unchecked: #6aa8e8; --unwitnessed: #7c8697;
+  --fresh-bg: #16342a; --drifted-bg: #3a2f14; --broken-bg: #3d1f1d; --unchecked-bg: #172a3d; --unwitnessed-bg: #252c37;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans);
+  padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 20px; }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand { font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
+.brand span { color: var(--muted); font-weight: 500; margin-left: 8px; font-family: var(--mono); font-size: 13px; }
+.stamp { color: var(--muted); font-size: 13px; }
+
+.hero { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px;
+  display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; }
+@media (max-width: 680px) { .hero { grid-template-columns: minmax(0, 1fr); padding: 18px; } }
+.verdict { font-size: clamp(28px, 5vw, 40px); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin: 0 0 6px; text-wrap: balance; }
+.verdict b { color: var(--fresh); }
+.sub { color: var(--muted); margin: 0 0 20px; }
+.bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--unwitnessed-bg); gap: 2px; }
+.bar i { display: block; min-width: 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.legend b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.trend h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.trend svg { width: 100%; height: auto; display: block; }
+.trend p { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip em { font-style: normal; opacity: .65; font-variant-numeric: tabular-nums; }
+.chip:focus-visible, .search:focus-visible { outline: 2px solid var(--unchecked); outline-offset: 2px; }
+.search { margin-left: auto; font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); min-width: 0; width: 200px; max-width: 100%; }
+
+.list { display: grid; gap: 10px; }
+.claim { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.claim[data-s="fresh"] { --c: var(--fresh); } .claim[data-s="drifted"] { --c: var(--drifted); }
+.claim[data-s="broken"] { --c: var(--broken); } .claim[data-s="unchecked"] { --c: var(--unchecked); }
+.claim[data-s="unwitnessed"] { --c: var(--unwitnessed); }
+.row { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
+.text { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.pill { flex: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 3px 9px; border-radius: 999px;
+  color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); }
+.meta { margin-top: 4px; font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.meta .id { font-family: var(--mono); }
+.ws { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.ws li { display: flex; gap: 10px; align-items: baseline; font-size: 13px; min-width: 0; }
+.dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--w); transform: translateY(-1px); }
+.ws code { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.ws span { color: var(--w); font-weight: 500; }
+.empty { text-align: center; color: var(--muted); padding: 40px 0; }
+.foot { color: var(--muted); font-size: 12.5px; text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .bar i { transition: flex-grow .4s; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">Witness<span id="repo"></span></div>
+    <div class="stamp" id="stamp"></div>
+  </div>
+  <section class="hero" aria-label="Memory health">
+    <div>
+      <h1 class="verdict" id="verdict"></h1>
+      <p class="sub" id="sub"></p>
+      <div class="bar" id="bar" role="img"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="trend">
+      <h3>Share still holding</h3>
+      <svg id="spark" viewBox="0 0 300 120" aria-hidden="true"></svg>
+      <p id="trendnote"></p>
+    </div>
+  </section>
+  <div class="tools" id="tools"></div>
+  <div class="list" id="list"></div>
+  <div class="foot">Every claim here is re-checked against the repo. Nothing is shown as true just because it was written down.</div>
+</div>
+<script id="data" type="application/json">{"repo": "demo-repo", "generated": "2026-11-04T09:30:00Z", "claims": [{"id": "w-99ee74", "text": "DB pool is capped at 10 connections; more starves the worker", "kind": "gotcha", "author": "agent", "source": "", "created": "2026-11-01T09:00:00Z", "verified": null, "status": "broken", "witnesses": [{"type": "grep", "spec": "src/db.py", "state": "broken", "detail": "pattern no longer found"}, {"type": "git", "spec": "src/db.py", "state": "drifted", "detail": "behind 1 commit"}]}, {"id": "w-39650d", "text": "Sessions are cached in Redis", "kind": "fact", "author": "agent", "source": "", "created": "2026-11-01T09:00:00Z", "verified": null, "status": "broken", "witnesses": [{"type": "grep", "spec": "src/cache.py", "state": "broken", "detail": "pattern no longer found"}, {"type": "git", "spec": "src/cache.py", "state": "drifted", "detail": "behind 1 commit"}]}, {"id": "w-a1fbdc", "text": "Auth tokens expire after one hour", "kind": "fact", "author": "agent", "source": "auth review", "created": "2026-11-01T09:00:00Z", "verified": null, "status": "drifted", "witnesses": [{"type": "grep", "spec": "src/auth.py", "state": "fresh", "detail": "1 match"}, {"type": "git", "spec": "src/auth.py", "state": "drifted", "detail": "behind 1 commit"}]}, {"id": "w-6ef89e", "text": "Payments retry at most 3 times, then fail loudly", "kind": "decision", "author": "human", "source": "", "created": "2026-11-01T09:00:00Z", "verified": null, "status": "drifted", "witnesses": [{"type": "grep", "spec": "src/payments.py", "state": "fresh", "detail": "1 match"}, {"type": "file", "spec": "src/payments.py", "state": "drifted", "detail": "content changed since recorded"}]}, {"id": "w-f23366", "text": "Local dev runs with make dev on Python 3.11", "kind": "fact", "author": "human", "source": "", "created": "2026-11-01T09:00:00Z", "verified": null, "status": "drifted", "witnesses": [{"type": "file", "spec": "README.md", "state": "drifted", "detail": "content changed since recorded"}]}, {"id": "w-59007b", "text": "Never call charge() from a request handler directly", "kind": "constraint", "author": "human", "source": "", "created": "2026-11-01T09:00:00Z", "verified": null, "status": "unwitnessed", "witnesses": []}, {"id": "w-e12ce5", "text": "Auth tests must pass before touching token code", "kind": "constraint", "author": "human", "source": "", "created": "2026-11-01T09:00:00Z", "verified": null, "status": "fresh", "witnesses": [{"type": "cmd", "spec": "python3 -c 'import sys; sys.exit(0)'", "state": "fresh", "detail": "exit 0"}, {"type": "git", "spec": "tests/test_auth.py", "state": "fresh", "detail": "no commits since recorded"}]}], "history": [{"ts": "2026-11-01T09:00:00Z", "counts": {"broken": 0, "drifted": 0, "unchecked": 0, "unwitnessed": 1, "fresh": 6}, "head": "a06af0744de3508f8bc9a90f22f0acaaea45e537"}, {"ts": "2026-11-02T09:00:00Z", "counts": {"broken": 0, "drifted": 0, "unchecked": 0, "unwitnessed": 1, "fresh": 6}, "head": "a06af0744de3508f8bc9a90f22f0acaaea45e537"}, {"ts": "2026-11-03T09:00:00Z", "counts": {"broken": 0, "drifted": 2, "unchecked": 0, "unwitnessed": 1, "fresh": 4}, "head": "ad53103b33f3e77cb41f6718c0dd9d2d8fcc5883"}, {"ts": "2026-11-04T09:30:00Z", "counts": {"broken": 2, "drifted": 3, "unchecked": 0, "unwitnessed": 1, "fresh": 1}, "head": "29a324f0cc4083eb886907178035c9704cd69370"}, {"ts": "2026-11-04T09:30:00Z", "counts": {"broken": 2, "drifted": 3, "unchecked": 0, "unwitnessed": 1, "fresh": 1}, "head": "29a324f0cc4083eb886907178035c9704cd69370"}]}</script>
+<script>
+(function () {
+  var D = JSON.parse(document.getElementById('data').textContent);
+  var ORDER = ['broken', 'drifted', 'unchecked', 'unwitnessed', 'fresh'];
+  var LABEL = { broken: 'Broken', drifted: 'Drifted', unchecked: 'Unchecked', unwitnessed: 'No proof', fresh: 'Holds' };
+  var COLOR = { broken: 'var(--broken)', drifted: 'var(--drifted)', unchecked: 'var(--unchecked)', unwitnessed: 'var(--unwitnessed)', fresh: 'var(--fresh)' };
+  var claims = D.claims, total = claims.length;
+  var n = {}; ORDER.forEach(function (s) { n[s] = claims.filter(function (c) { return c.status === s; }).length; });
+  var gen = new Date(D.generated);
+
+  function ago(iso) {
+    if (!iso) return 'never';
+    var s = Math.max(0, (gen - new Date(iso)) / 1000);
+    if (s < 90) return 'just now';
+    if (s < 5400) return Math.round(s / 60) + ' min ago';
+    if (s < 129600) return Math.round(s / 3600) + ' h ago';
+    return Math.round(s / 86400) + ' days ago';
+  }
+  function el(t, cls, txt) { var e = document.createElement(t); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+  document.getElementById('repo').textContent = D.repo;
+  document.getElementById('stamp').textContent = 'Checked ' + gen.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+
+  var v = document.getElementById('verdict');
+  if (!total) { v.textContent = 'Nothing remembered yet'; document.getElementById('sub').textContent = 'Add a claim with `witness add`.'; }
+  else {
+    var b = el('b', null, n.fresh + ' of ' + total);
+    var share = n.fresh / total; b.style.color = share >= 0.8 ? 'var(--fresh)' : share >= 0.5 ? 'var(--drifted)' : 'var(--broken)';
+    v.appendChild(b); v.appendChild(document.createTextNode(' memories still hold'));
+    var bad = n.broken + n.drifted;
+    document.getElementById('sub').textContent = bad
+      ? (n.broken ? n.broken + ' no longer true' : '') + (n.broken && n.drifted ? ', ' : '') + (n.drifted ? n.drifted + ' sit on code that has changed' : '') + '. Treat these as unverified.'
+      : 'Nothing has drifted since each claim was recorded.';
+  }
+
+  var bar = document.getElementById('bar'), lg = document.getElementById('legend');
+  bar.setAttribute('aria-label', ORDER.map(function (s) { return n[s] + ' ' + LABEL[s]; }).join(', '));
+  ORDER.forEach(function (s) {
+    if (!n[s]) return;
+    var seg = el('i'); seg.style.background = COLOR[s]; seg.style.flex = n[s] + ' 1 0'; seg.title = LABEL[s] + ': ' + n[s]; bar.appendChild(seg);
+    var sp = el('span'); var d = el('i'); d.style.background = COLOR[s]; sp.appendChild(d); sp.appendChild(el('b', null, n[s])); sp.appendChild(document.createTextNode(' ' + LABEL[s].toLowerCase())); lg.appendChild(sp);
+  });
+
+  // Trend: share of claims that hold, one point per recorded check.
+  var H = D.history.filter(function (h) { var t = 0; for (var k in h.counts) t += h.counts[k]; return t > 0; })
+    .map(function (h) { var t = 0; for (var k in h.counts) t += h.counts[k]; return { ts: h.ts, p: Math.round(100 * h.counts.fresh / t) }; });
+  var svg = document.getElementById('spark'), NS = 'http://www.w3.org/2000/svg';
+  function s(tag, attrs) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  var L = 8, R = 292, T = 10, B = 100;
+  [0, 50, 100].forEach(function (g) {
+    var y = B - (B - T) * g / 100;
+    svg.appendChild(s('line', { x1: L, x2: R, y1: y, y2: y, stroke: 'var(--line)', 'stroke-width': 1 }));
+    var t = s('text', { x: R, y: y - 3, 'text-anchor': 'end', 'font-size': 9, fill: 'var(--muted)', 'font-family': 'var(--mono)' }); t.textContent = g + '%'; svg.appendChild(t);
+  });
+  if (H.length >= 2) {
+    var pts = H.map(function (h, i) { return [L + (R - L) * i / (H.length - 1), B - (B - T) * h.p / 100]; });
+    var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+    svg.appendChild(s('path', { d: line + ' L' + R + ' ' + B + ' L' + L + ' ' + B + ' Z', fill: 'var(--fresh)', 'fill-opacity': .12 }));
+    svg.appendChild(s('path', { d: line, fill: 'none', stroke: 'var(--fresh)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    var last = pts[pts.length - 1];
+    svg.appendChild(s('circle', { cx: last[0], cy: last[1], r: 4, fill: 'var(--fresh)', stroke: 'var(--surface)', 'stroke-width': 2 }));
+    var d0 = H[0], d1 = H[H.length - 1];
+    document.getElementById('trendnote').textContent = d1.p + '% now, ' + d0.p + '% at the first of ' + H.length + ' checks.';
+  } else {
+    document.getElementById('trendnote').textContent = 'The trend appears after the second check.';
+  }
+
+  // Filters + list
+  var filter = 'all', q = '';
+  var tools = document.getElementById('tools'), chips = {};
+  function chip(key, label, count) {
+    var c = el('button', 'chip'); c.type = 'button'; c.setAttribute('aria-pressed', key === 'all');
+    c.appendChild(document.createTextNode(label + ' ')); c.appendChild(el('em', null, count));
+    c.onclick = function () { filter = key; for (var k in chips) chips[k].setAttribute('aria-pressed', k === key); render(); };
+    chips[key] = c; tools.appendChild(c);
+  }
+  chip('all', 'All', total);
+  ORDER.forEach(function (st) { if (n[st]) chip(st, LABEL[st], n[st]); });
+  var search = el('input', 'search'); search.type = 'search'; search.id = 'q'; search.placeholder = 'Search claims'; search.setAttribute('aria-label', 'Search claims');
+  search.oninput = function () { q = search.value.toLowerCase(); render(); }; tools.appendChild(search);
+
+  var list = document.getElementById('list');
+  function render() {
+    list.textContent = '';
+    var rows = claims.filter(function (c) {
+      return (filter === 'all' || c.status === filter) && (!q || (c.text + ' ' + c.kind + ' ' + c.witnesses.map(function (w) { return w.spec; }).join(' ')).toLowerCase().indexOf(q) > -1);
+    });
+    if (!rows.length) { list.appendChild(el('div', 'empty', total ? 'No claims match.' : 'No claims yet.')); return; }
+    rows.forEach(function (c) {
+      var card = el('article', 'claim'); card.dataset.s = c.status;
+      var row = el('div', 'row'); row.appendChild(el('div', 'text', c.text)); row.appendChild(el('span', 'pill', LABEL[c.status])); card.appendChild(row);
+      var m = el('div', 'meta');
+      m.appendChild(el('span', 'id', c.id)); m.appendChild(el('span', null, c.kind)); m.appendChild(el('span', null, 'by ' + c.author));
+      m.appendChild(el('span', null, 'recorded ' + ago(c.created)));
+      if (c.verified) m.appendChild(el('span', null, 'confirmed ' + ago(c.verified)));
+      if (c.source) m.appendChild(el('span', null, 'from ' + c.source));
+      card.appendChild(m);
+      if (c.witnesses.length) {
+        var ul = el('ul', 'ws');
+        c.witnesses.forEach(function (w) {
+          var li = el('li'); li.style.setProperty('--w', COLOR[w.state]);
+          li.appendChild(el('i', 'dot')); li.appendChild(el('code', null, w.type + ' ' + w.spec)); li.appendChild(el('span', null, w.detail)); ul.appendChild(li);
+        });
+        card.appendChild(ul);
+      }
+      list.appendChild(card);
+    });
+  }
+  render();
+})();
+</script>
+</body>
+</html>

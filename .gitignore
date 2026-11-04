@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+witness-report.html
+examples/demo-repo/
